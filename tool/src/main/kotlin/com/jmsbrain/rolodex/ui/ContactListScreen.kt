@@ -17,7 +17,7 @@ import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightText
-import com.thelightphone.sdk.ui.LightTextField
+import androidx.compose.foundation.layout.Box
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
 import com.thelightphone.sdk.ui.lightClickable
@@ -71,15 +71,10 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
                 }
             },
         ) {
-            LightTextField(
-                label = "Search",
-                value = query,
-                placeholder = "Name",
-                onClick = {
-                    navigateTo({ TextEditScreen(it, "Search", query) }) { viewModel.query.value = it }
-                },
-                modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
-            )
+            TapField("SEARCH", query, "Tap to search") {
+                navigateTo({ TextEditScreen(it, "Search", query) }) { viewModel.query.value = it }
+            }
+            Box(Modifier.padding(bottom = 1f.gridUnitsAsDp()))
             when {
                 contacts == null -> LightText("Loading…", LightTextVariant.Copy, lighten = true)
                 contacts.orEmpty().isEmpty() -> LightText(

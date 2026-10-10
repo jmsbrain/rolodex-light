@@ -194,7 +194,9 @@ object VCard {
                 "ADR" -> {
                     // PO box; extended; street; city; region; postcode; country
                     val a = prop.parts + List(7) { "" }
-                    val cityLine = listOf(a[3], a[4], a[5]).filter { it.isNotBlank() }.joinToString(" ")
+                    // "Portland, OR 97201"
+                    val regionZip = listOf(a[4], a[5]).filter { it.isNotBlank() }.joinToString(" ")
+                    val cityLine = listOf(a[3], regionZip).filter { it.isNotBlank() }.joinToString(", ")
                     add(FieldKind.ADDRESS, homeWorkLabel(prop.types, "HOME"),
                         listOf(a[0], a[1], a[2], cityLine, a[6]).filter { it.isNotBlank() }.joinToString("\n"))
                 }

@@ -140,7 +140,7 @@ private fun Entry(label: String?, value: String, onTap: (() -> Unit)? = null) {
             .let { if (onTap != null) it.lightClickable(onClick = onTap) else it }
             .padding(vertical = 0.4f.gridUnitsAsDp()),
     ) {
-        if (!label.isNullOrBlank()) LightText(label, LightTextVariant.Fine, lighten = true)
+        if (!label.isNullOrBlank()) LightText(label, LightTextVariant.Superfine, lighten = true)
         LightText(value, LightTextVariant.Paragraph, underline = onTap != null)
     }
 }

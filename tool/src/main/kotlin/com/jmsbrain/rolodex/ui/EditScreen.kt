@@ -23,7 +23,6 @@ import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightText
-import com.thelightphone.sdk.ui.LightTextField
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
 import com.thelightphone.sdk.ui.lightClickable
@@ -101,8 +100,8 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
         navigateTo({ ConfirmScreen(it, "Discard your changes?", "DISCARD") }) { discard -> if (discard) goBack(null) }
     }
 
-    private fun editText(title: String, value: String, caps: Boolean = true, set: (String) -> Unit) =
-        navigateTo({ TextEditScreen(it, title, value, caps) }) { set(it) }
+    private fun editText(title: String, value: String, caps: Boolean = true, singleLine: Boolean = true, set: (String) -> Unit) =
+        navigateTo({ TextEditScreen(it, title, value, caps, singleLine) }) { set(it) }
 
     @Composable
     override fun Content() {
@@ -158,9 +157,8 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
     }
 
     @Composable
-    private fun Field(label: String, value: String, placeholder: String, onClick: () -> Unit) {
-        LightTextField(label = label, value = value, placeholder = placeholder, onClick = onClick)
-    }
+    private fun Field(label: String, value: String, placeholder: String, onClick: () -> Unit) =
+        TapField(label, value, placeholder, onClick)
 
     /** One repeatable section: each value with its type and REMOVE, then ADD. */
     @Composable
@@ -172,7 +170,7 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
                 if (kind.labels.isNotEmpty()) {
                     LightText(
                         text = field.label,
-                        variant = LightTextVariant.Fine,
+                        variant = LightTextVariant.Detail,
                         underline = true,
                         modifier = Modifier.lightClickable {
                             navigateTo({ ChoiceScreen(it, kind.title, kind.labels, field.label) }) { label ->
@@ -184,7 +182,7 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
                 Box(Modifier.weight(1f))
                 LightText(
                     text = "REMOVE",
-                    variant = LightTextVariant.Fine,
+                    variant = LightTextVariant.Detail,
                     lighten = true,
                     modifier = Modifier.lightClickable { viewModel.removeField(index) },
                 )
@@ -196,7 +194,12 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
                 modifier = Modifier
                     .fillMaxWidth()
                     .lightClickable {
-                        editText(kind.placeholder, field.value, caps = kind in setOf(FieldKind.ADDRESS, FieldKind.NICKNAME, FieldKind.RELATED, FieldKind.NOTE)) {
+                        editText(
+                            kind.placeholder,
+                            field.value,
+                            caps = kind in setOf(FieldKind.ADDRESS, FieldKind.NICKNAME, FieldKind.RELATED, FieldKind.NOTE),
+                            singleLine = kind != FieldKind.ADDRESS && kind != FieldKind.NOTE,
+                        ) {
                             viewModel.setField(index, field.copy(value = it))
                         }
                     }

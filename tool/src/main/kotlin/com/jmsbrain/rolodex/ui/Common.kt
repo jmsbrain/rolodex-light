@@ -69,12 +69,28 @@ fun RolodexPage(
 
 fun backButton(onClick: () -> Unit) = LightBarButton.LightIcon(icon = LightIcons.BACK, onClick = onClick)
 
+/** Label, then the value (or a dimmed hint when empty). Tap to edit. */
+@Composable
+fun TapField(label: String, value: String, placeholder: String, onClick: () -> Unit) {
+    LightText(label, LightTextVariant.Superfine, lighten = true, modifier = Modifier.padding(top = 0.5f.gridUnitsAsDp()))
+    LightText(
+        text = value.ifBlank { placeholder },
+        variant = LightTextVariant.Paragraph,
+        lighten = value.isBlank(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .lightClickable(onClick = onClick)
+            .padding(vertical = 0.3f.gridUnitsAsDp()),
+    )
+}
+
 /** Full-screen Light keyboard editor; returns the new text, or null if backed out. */
 class TextEditScreen(
     sealedActivity: SealedLightActivity,
     private val title: String,
     private val initial: String,
     private val caps: Boolean = true,
+    private val singleLine: Boolean = true,
 ) : SimpleLightScreen<String>(sealedActivity) {
 
     @Composable
@@ -89,6 +105,7 @@ class TextEditScreen(
                 onSubmit = { goBack(it.toString()) },
                 onBack = { goBack(null) },
                 initialCaps = caps && initial.isBlank(),
+                singleLine = singleLine,
             )
         }
     }

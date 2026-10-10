@@ -40,11 +40,16 @@ class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>(
 
     fun import(name: String) {
         viewModelScope.launch {
+            // Null = missing or unreadable, not just empty.
             val cards = withContext(Dispatchers.IO) {
-                files.read("${Folders.IMPORT}/$name") { VCard.parse(it.readText()) }.orEmpty()
+                runCatching { files.read("${Folders.IMPORT}/$name") { VCard.parse(it.readText()) } }.getOrNull()
             }
-            cards.forEach { Contacts.source.save(it) }
-            message.value = if (cards.isEmpty()) "No contacts found in $name." else "Imported ${cards.size} contact(s) from $name."
+            cards?.forEach { Contacts.source.save(it) }
+            message.value = when {
+                cards == null -> "Couldn't open $name."
+                cards.isEmpty() -> "No contacts found in $name."
+                else -> "Imported ${cards.size} contact(s) from $name."
+            }
         }
     }
 

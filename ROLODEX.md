@@ -2,7 +2,7 @@
 
 A full contacts tool for the Light Phone III, built on the [Light SDK](https://github.com/lightphone/light-sdk). It's the official-tool version of [Rolodex](https://github.com/jmsbrain/Rolodex).
 
-**Status:** early (0.1.1). It works with its own contact list for now. Using the phone's synced contacts is waiting on Light ([discussion](https://github.com/orgs/lightphone/discussions/276)). See [ENABLE_PHONE_CONTACTS.md](ENABLE_PHONE_CONTACTS.md).
+**Status:** early (0.1.2). It works with its own contact list for now. Using the phone's synced contacts is waiting on Light ([discussion](https://github.com/orgs/lightphone/discussions/276)). See [ENABLE_PHONE_CONTACTS.md](ENABLE_PHONE_CONTACTS.md).
 
 ## What it does
 

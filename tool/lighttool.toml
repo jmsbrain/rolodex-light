@@ -1,10 +1,14 @@
 [tool]
-id = "com.thelightphone.app"
-label = "Light SDK Tool"
+id = "com.jmsbrain.rolodex"
+label = "Rolodex"
 versionCode = 1
-versionName = "1.0.0"
-permissions = ["android.permission.INTERNET"]
-capabilities = []
+versionName = "0.1.0"
+# No permissions: contacts live inside the tool for now.
+# Once LightOS allows it, add "android.permission.READ_CONTACTS" and
+# "android.permission.WRITE_CONTACTS" here (see ENABLE_PHONE_CONTACTS.md).
+permissions = []
+capabilities = ["tool-manager-provider"]
+orientation = "portrait"
 # for the LightOS emulator, use the line below and build with -DlightSdk.allowAltServerPackage=true
 # serverPackage = "com.thelightphone.sdk.emulator"
 serverPackage = "com.lightos"

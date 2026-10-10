@@ -1,0 +1,76 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Okafor;Evelyn;Marie;Dr.;PhD
+FN:Dr. Evelyn Marie Okafor PhD
+NICKNAME:Evie,Doc
+ORG:Northwind Labs;Research;Materials Group
+TITLE:Principal Scientist
+TEL;TYPE=CELL,PREF:+1-919-555-0101
+TEL;TYPE=WORK,VOICE:(919) 555-0102
+TEL;TYPE=HOME:919.555.0103
+TEL;TYPE=WORK,FAX:919-555-0104
+EMAIL;TYPE=INTERNET,WORK:evelyn.okafor@example.com
+EMAIL;TYPE=INTERNET,HOME:evie@example.org
+ADR;TYPE=WORK:;Suite 400;120 Lab Way;Durham;NC;27701;USA
+ADR;TYPE=HOME:PO Box 42;;8 Maple Ct;Chapel Hill;NC;27514;USA
+URL:https://northwind.example.com/okafor
+BDAY:1984-03-15
+X-ANNIVERSARY:2012-06-09
+NOTE:Met at the 2024 materials conference.\nPrefers email over calls.\nAsk about the Raleigh lab move.
+END:VCARD
+BEGIN:VCARD
+VERSION:2.1
+N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:M=C3=BCller;Jos=C3=A9;;;
+FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:Jos=C3=A9 M=C3=BCller
+TEL;CELL;PREF:5550105
+TEL;HOME:+49 30 5550106
+TEL;WORK;VOICE:555-0107
+EMAIL;INTERNET:jose.muller@example.net
+ADR;HOME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;Stra=C3=9Fe des 17. Juni 135;Berlin;;10623;Deu=
+tschland
+NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:Caf=C3=A9 owner =E2=80=94 knows the best espresso in to=
+wn.=0D=0ASecond line after a QP line break.
+PHOTO;ENCODING=BASE64;TYPE=JPEG:/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/
+END:VCARD
+BEGIN:VCARD
+VERSION:4.0
+FN:Priya Raman
+N:Raman;Priya;;;
+TEL;VALUE=uri;TYPE="cell,voice";PREF=1:tel:+1-984-555-0108
+TEL;VALUE=uri;TYPE=work:tel:+1-984-555-0109
+EMAIL;TYPE=work:priya.raman@example.com
+BDAY:--0704
+ANNIVERSARY:20150822
+RELATED;TYPE=spouse:Arjun Raman
+RELATED;TYPE=child:Leela Raman
+RELATED;TYPE=friend:Sam Whitfield
+RELATED;TYPE=co-worker:Dana Ortiz
+IMPP;X-SERVICE-TYPE=Jabber:xmpp:priya@chat.example.com
+IMPP:skype:priya.raman.example
+X-SIP:sip:priya@voip.example.com
+URL:https://priya.example.com
+NOTE:Escaped text test: commas\, semicolons\; and a backslash \\ should all show literally.
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Sam Whitfield
+TEL:555-0110
+END:VCARD
+BEGIN:VCARD
+VERSION:2.1
+N:Ortiz;Dana;Lee;;
+FN:Dana Lee Ortiz
+X-ANDROID-CUSTOM:vnd.android.cursor.item/nickname;Dee;1;;;;;;;;;;;;;
+TEL;CELL:+1 252-555-0111
+item1.TEL:252-555-0112
+item1.X-ABLabel:Studio
+item2.EMAIL;INTERNET:dana@example.org
+item2.X-ABLabel:Newsletter
+ORG:Ortiz Pottery Studio
+TITLE:Owner
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2019-11-02;0;Studio opening;;;;;;;;;;;;
+X-ANDROID-CUSTOM:vnd.android.cursor.item/relation;Marco Ortiz;14;;;;;;;;;;;;;
+NOTE:This note is long enough that the exporting app folded it across sever
+ al lines\, the way real vCard files wrap anything past 75 characters. It sh
+ ould read as one unbroken sentence.
+END:VCARD

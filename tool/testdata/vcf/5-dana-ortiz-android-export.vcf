@@ -1,0 +1,18 @@
+BEGIN:VCARD
+VERSION:2.1
+N:Ortiz;Dana;Lee;;
+FN:Dana Lee Ortiz
+X-ANDROID-CUSTOM:vnd.android.cursor.item/nickname;Dee;1;;;;;;;;;;;;;
+TEL;CELL:+1 252-555-0111
+item1.TEL:252-555-0112
+item1.X-ABLabel:Studio
+item2.EMAIL;INTERNET:dana@example.org
+item2.X-ABLabel:Newsletter
+ORG:Ortiz Pottery Studio
+TITLE:Owner
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2019-11-02;0;Studio opening;;;;;;;;;;;;
+X-ANDROID-CUSTOM:vnd.android.cursor.item/relation;Marco Ortiz;14;;;;;;;;;;;;;
+NOTE:This note is long enough that the exporting app folded it across sever
+ al lines\, the way real vCard files wrap anything past 75 characters. It sh
+ ould read as one unbroken sentence.
+END:VCARD

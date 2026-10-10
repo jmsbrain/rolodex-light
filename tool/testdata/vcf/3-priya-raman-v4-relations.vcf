@@ -1,0 +1,19 @@
+BEGIN:VCARD
+VERSION:4.0
+FN:Priya Raman
+N:Raman;Priya;;;
+TEL;VALUE=uri;TYPE="cell,voice";PREF=1:tel:+1-984-555-0108
+TEL;VALUE=uri;TYPE=work:tel:+1-984-555-0109
+EMAIL;TYPE=work:priya.raman@example.com
+BDAY:--0704
+ANNIVERSARY:20150822
+RELATED;TYPE=spouse:Arjun Raman
+RELATED;TYPE=child:Leela Raman
+RELATED;TYPE=friend:Sam Whitfield
+RELATED;TYPE=co-worker:Dana Ortiz
+IMPP;X-SERVICE-TYPE=Jabber:xmpp:priya@chat.example.com
+IMPP:skype:priya.raman.example
+X-SIP:sip:priya@voip.example.com
+URL:https://priya.example.com
+NOTE:Escaped text test: commas\, semicolons\; and a backslash \\ should all show literally.
+END:VCARD

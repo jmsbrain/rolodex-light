@@ -1,0 +1,20 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Okafor;Evelyn;Marie;Dr.;PhD
+FN:Dr. Evelyn Marie Okafor PhD
+NICKNAME:Evie,Doc
+ORG:Northwind Labs;Research;Materials Group
+TITLE:Principal Scientist
+TEL;TYPE=CELL,PREF:+1-919-555-0101
+TEL;TYPE=WORK,VOICE:(919) 555-0102
+TEL;TYPE=HOME:919.555.0103
+TEL;TYPE=WORK,FAX:919-555-0104
+EMAIL;TYPE=INTERNET,WORK:evelyn.okafor@example.com
+EMAIL;TYPE=INTERNET,HOME:evie@example.org
+ADR;TYPE=WORK:;Suite 400;120 Lab Way;Durham;NC;27701;USA
+ADR;TYPE=HOME:PO Box 42;;8 Maple Ct;Chapel Hill;NC;27514;USA
+URL:https://northwind.example.com/okafor
+BDAY:1984-03-15
+X-ANNIVERSARY:2012-06-09
+NOTE:Met at the 2024 materials conference.\nPrefers email over calls.\nAsk about the Raleigh lab move.
+END:VCARD

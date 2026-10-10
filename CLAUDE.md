@@ -37,5 +37,6 @@ Both must pass. The first runs Light's config and source checks; the second runs
 ## Testing
 
 - Emulator: 1080×1240, API 34, no Google Play. For LightOS features (dialer, Tool Manager), see `docs/system_app/README.md`.
+- `tool/scripts/emulator-start.sh` boots the `Light_Phone` emulator. `tool/scripts/emulator-install.sh` builds for the LightOS emulator, installs on `emulator-5554` only and opens Rolodex. Add `--testdata` to copy `tool/testdata/vcf` into the import folder. It puts `serverPackage` back to `com.lightos` when done.
 - Light Phone III: `adb install -r tool/build/outputs/apk/debug/tool-debug.apk`. Needs "Any tools" on.
 - Use made-up contacts for screenshots. Never the owner's real ones.

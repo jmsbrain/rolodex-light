@@ -23,7 +23,7 @@ A full contacts tool for the Light Phone III, built on the [Light SDK](https://g
   - **Save as contact file (.vcf):** every field, notes included. Download it from Tool Manager (*Rolodex → Export contacts*).
 
 ### Import and export
-- **IMPORT:** upload .vcf files through Tool Manager (*Rolodex → Import contacts*), then tap a file. One contact opens in the editor to check first. Several show as a list: **IMPORT ALL**, or tap one to check it.
+- **IMPORT:** upload .vcf files through Tool Manager (*Rolodex → Import contacts*), then tap a file. One contact opens in the editor to check first. Several show as a list: **IMPORT ALL**, or tap one to check it. Once imported, you're back on the list, which says how many were added.
 - **EXPORT** (on the import screen): saves every contact to one .vcf, downloadable from Tool Manager (*Rolodex → Export contacts*).
 
 ### Sync

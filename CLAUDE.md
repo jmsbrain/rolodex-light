@@ -22,6 +22,7 @@ The plain-Android version (the one in daily use) is https://github.com/jmsbrain/
 - Permissions and capabilities go only in `tool/lighttool.toml`, and only allowlisted ones (`LightToolPolicy` in `plugin/.../LightToolMetadata.kt`). Libraries only from `plugin/src/main/resources/.../allowed-dependencies.txt`.
 - Bump `versionCode` (+1) and `versionName` (MAJOR.MINOR.PATCH) in `lighttool.toml` for every release. Never change `id`.
 - Tag releases `rolodex-vX.Y.Z`, never plain `vX.Y.Z`: those tags are Light's SDK versions, which this fork inherits.
+- Releases attach `:tool:assembleRelease` (stripped, no barcode scanner) as `rolodex-light-X.Y.Z.apk`. Test that build on the emulator first (`java tool/scripts/MockCardDav.java` for sync): stripping can break things only at run time.
 - Keep code comments short, in the owner's voice. No long explanations (Light's AI/LLM policy).
 - Never post to Light's GitHub (issues, discussions, PRs) for the owner. Drafts are notes for them to rewrite.
 - Contacts all go through `ContactsSource` (`tool/.../data/`). Don't touch Android contacts directly anywhere else. Sync (`tool/.../sync/`) uses `LocalContactsSource`'s sync methods.

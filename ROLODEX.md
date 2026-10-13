@@ -1,4 +1,4 @@
-# Rolodex (LightOS tool)
+# Rolodex Light (LightOS tool)
 
 A full contacts tool for the Light Phone III, built on the [Light SDK](https://github.com/lightphone/light-sdk). It's the official-tool version of [Rolodex](https://github.com/jmsbrain/Rolodex).
 
@@ -20,11 +20,11 @@ A full contacts tool for the Light Phone III, built on the [Light SDK](https://g
 ### Share
 - **SHARE** on a card:
   - **Copy as text:** the name, then "Mobile: …", "Email: …" and so on. Notes are left out. Paste it into a message.
-  - **Save as contact file (.vcf):** every field, notes included. Download it from Tool Manager (*Rolodex → Export contacts*).
+  - **Save as contact file (.vcf):** every field, notes included. Download it from Tool Manager (*Rolodex Light → Export contacts*).
 
 ### Import and export
-- **IMPORT:** upload .vcf files through Tool Manager (*Rolodex → Import contacts*), then tap a file. One contact opens in the editor to check first. Several show as a list: **IMPORT ALL**, or tap one to check it. Once imported, you're back on the list, which says how many were added.
-- **EXPORT** (on the import screen): saves every contact to one .vcf, downloadable from Tool Manager (*Rolodex → Export contacts*).
+- **IMPORT:** upload .vcf files through Tool Manager (*Rolodex Light → Import contacts*), then tap a file. One contact opens in the editor to check first. Several show as a list: **IMPORT ALL**, or tap one to check it. Once imported, you're back on the list, which says how many were added.
+- **EXPORT** (on the import screen): saves every contact to one .vcf, downloadable from Tool Manager (*Rolodex Light → Export contacts*).
 
 ### Sync
 Rolodex syncs with a **CardDAV** server (mailbox.org, Fastmail, Nextcloud, iCloud…), the same way plain-Android Rolodex does.

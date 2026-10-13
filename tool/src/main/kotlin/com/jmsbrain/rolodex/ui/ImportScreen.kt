@@ -101,7 +101,7 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, Im
                 bottom = listOf(LightBarButton.Text(text = "EXPORT", onClick = viewModel::export)),
             ) {
                 LightText(
-                    "Upload .vcf files with Tool Manager (Rolodex → Import contacts), then tap a file to add its contacts.",
+                    "Upload .vcf files with Tool Manager (Rolodex Light → Import contacts), then tap a file to add its contacts.",
                     LightTextVariant.Paragraph,
                     lighten = true,
                     modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),

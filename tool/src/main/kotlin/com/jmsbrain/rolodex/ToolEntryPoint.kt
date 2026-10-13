@@ -28,7 +28,7 @@ object ToolEntryPoint : LightEntryPoint {
                 FileBrowserSpec(
                     label = "Export contacts",
                     path = Folders.EXPORT,
-                    headerText = "Tap EXPORT in Rolodex to save all contacts here as a .vcf file.",
+                    headerText = "Tap EXPORT in Rolodex Light to save all contacts here as a .vcf file.",
                 ),
             ),
         ),

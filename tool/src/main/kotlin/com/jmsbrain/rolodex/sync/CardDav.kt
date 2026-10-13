@@ -157,7 +157,7 @@ class CardDav(user: String, password: String) {
             DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
                 .newDocumentBuilder().parse(text.byteInputStream())
         } catch (e: Exception) {
-            throw DavError("${req.url.host} sent an answer Rolodex can't read.")
+            throw DavError("${req.url.host} sent an answer Rolodex Light can't read.")
         }
         val base = res.request.url
         doc.documentElement.children("response").mapNotNull { r ->

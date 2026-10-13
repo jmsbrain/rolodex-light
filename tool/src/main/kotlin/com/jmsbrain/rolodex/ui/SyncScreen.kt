@@ -191,7 +191,7 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
         val server by viewModel.server.collectAsState()
 
         Dim(
-            "Sign in to your contacts (CardDAV) server, such as mailbox.org, and Rolodex keeps your contacts in step with it. " +
+            "Sign in to your contacts (CardDAV) server, such as mailbox.org, and Rolodex Light keeps your contacts in step with it. " +
                 "If you use two-factor sign-in, use an app password.",
         )
         TapField("EMAIL", email, "you@mailbox.org") { edit("Email", email) { viewModel.email.value = it.trim() } }
@@ -199,7 +199,7 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
         TapField("SERVER", server, SyncSettings.DEFAULT_SERVER) { edit("Server", server) { viewModel.server.value = it.trim() } }
         if (busy) LightText("Signing in…", LightTextVariant.Paragraph, lighten = true, modifier = Modifier.padding(top = 1f.gridUnitsAsDp()))
         Heading("PRIVACY")
-        Dim("Your password stays on this phone, encrypted, and is only sent to the server above. Contacts already in Rolodex stay on this phone until you choose to sync them.")
+        Dim("Your password stays on this phone, encrypted, and is only sent to the server above. Contacts already in Rolodex Light stay on this phone until you choose to sync them.")
     }
 
     @Composable
@@ -240,7 +240,7 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
                     .lightClickable {
                         if (book.sync) {
                             confirm(
-                                "Stop syncing ${book.name}? Its contacts leave Rolodex but stay on the server. Changes not yet synced are lost.",
+                                "Stop syncing ${book.name}? Its contacts leave Rolodex Light but stay on the server. Changes not yet synced are lost.",
                                 "STOP SYNCING",
                             ) { viewModel.setSync(book, false) }
                         } else {
@@ -286,7 +286,7 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
         TextAction("CHANGE PASSWORD") { edit("New password", "") { viewModel.changePassword(it) } }
         TextAction("SIGN OUT") {
             confirm(
-                "Sign out? Synced contacts are removed from Rolodex. They stay on the server. Changes not yet synced are lost.",
+                "Sign out? Synced contacts are removed from Rolodex Light. They stay on the server. Changes not yet synced are lost.",
                 "SIGN OUT",
             ) {
                 viewModel.signOut { SyncSchedule.stop(lightContext) }

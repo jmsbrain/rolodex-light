@@ -1,5 +1,6 @@
 package com.jmsbrain.rolodex.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -8,8 +9,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewModelScope
 import com.jmsbrain.rolodex.Folders
+import com.jmsbrain.rolodex.data.Contact
 import com.jmsbrain.rolodex.data.Contacts
 import com.jmsbrain.rolodex.data.VCard
+import com.jmsbrain.rolodex.sync.CardSync
 import com.thelightphone.sdk.LightFileShare
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
@@ -26,33 +29,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ImportViewModel(private val files: LightFileShare) : LightViewModel<String>() {
+class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>() {
     val vcfFiles = MutableStateFlow<List<String>>(emptyList())
     val message = MutableStateFlow<String?>(null)
-    val importing = MutableStateFlow(false)
 
-    override fun onScreenShow(screen: SimpleLightScreen<String>) {
+    override fun onScreenShow(screen: SimpleLightScreen<Unit>) {
         vcfFiles.value = files.list(Folders.IMPORT)
             .filter { it.isFile && (it.name.endsWith(".vcf", true) || it.name.endsWith(".vcard", true)) }
             .map { it.name }
             .sorted()
     }
 
-    /** Imports one file, then [done] gets the result. One at a time, so a second tap can't import twice. */
-    fun import(name: String, done: (String) -> Unit) {
-        if (importing.value) return
-        importing.value = true
+    /** Reads [name]; [open] gets its contacts. */
+    fun read(name: String, open: (List<Contact>) -> Unit) {
         viewModelScope.launch {
             // Null = missing or unreadable, not just empty.
             val cards = withContext(Dispatchers.IO) {
                 runCatching { files.read("${Folders.IMPORT}/$name") { VCard.parse(it.readText()) } }.getOrNull()
             }
-            cards?.forEach { Contacts.source.save(it) }
-            done(when {
-                cards == null -> "Couldn't open $name."
-                cards.isEmpty() -> "No contacts found in $name."
-                else -> "Imported ${cards.size} contact(s) from $name."
-            })
+            when {
+                cards == null -> message.value = "Couldn't open $name."
+                cards.isEmpty() -> message.value = "No contacts found in $name."
+                else -> open(cards)
+            }
         }
     }
 
@@ -67,23 +66,24 @@ class ImportViewModel(private val files: LightFileShare) : LightViewModel<String
     }
 }
 
-/** Imports .vcf files uploaded through Tool Manager, and exports a backup. Returns the import result. */
-class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, ImportViewModel>(sealedActivity) {
+/** Imports .vcf files uploaded through Tool Manager, and exports a backup. */
+class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, ImportViewModel>(sealedActivity) {
 
     override val viewModelClass get() = ImportViewModel::class.java
     override fun createViewModel() = ImportViewModel(lightContext.fileShare)
+
+    private fun open(name: String) = viewModel.read(name) { cards ->
+        // One contact: check it in the editor. Several: a list.
+        if (cards.size == 1) navigateTo({ EditScreen(it, null, cards.single()) })
+        else navigateTo({ ImportFileScreen(it, name, cards) })
+    }
 
     @Composable
     override fun Content() {
         val vcfFiles by viewModel.vcfFiles.collectAsState()
         val message by viewModel.message.collectAsState()
-        val importing by viewModel.importing.collectAsState()
 
-        val shownMessage = message
-        // Instead of the page, not over it: the modal lets taps through.
-        if (shownMessage != null) {
-            LightFullscreenModal(message = shownMessage, onClose = { viewModel.message.value = null })
-        } else {
+        Box {
             RolodexPage(
                 title = "Import",
                 left = backButton { goBack() },
@@ -95,18 +95,79 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, Im
                     lighten = true,
                     modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
                 )
-                if (importing) LightText("Importing…", LightTextVariant.Copy, lighten = true)
-                else if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
-                else vcfFiles.forEach { name ->
+                if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
+                vcfFiles.forEach { name ->
                     LightText(
                         text = name,
                         variant = LightTextVariant.Copy,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .lightClickable { viewModel.import(name) { goBack(it) } }
+                            .lightClickable { open(name) }
                             .padding(vertical = 0.6f.gridUnitsAsDp()),
                     )
                 }
+            }
+            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
+        }
+    }
+}
+
+class ImportFileViewModel(private val cards: List<Contact>) : LightViewModel<Unit>() {
+    val message = MutableStateFlow<String?>(null)
+    val busy = MutableStateFlow(false)
+
+    fun importAll() {
+        busy.value = true
+        viewModelScope.launch {
+            val saved = cards.count { c -> runCatching { Contacts.source.save(c.copy(id = "")) }.isSuccess }
+            CardSync.syncSoon()
+            busy.value = false
+            message.value = if (saved == cards.size) "Imported $saved contacts." else "Imported $saved of ${cards.size} contacts."
+        }
+    }
+}
+
+/** The contacts in one .vcf: IMPORT ALL, or tap one to check it first. */
+class ImportFileScreen(sealedActivity: SealedLightActivity, private val name: String, private val cards: List<Contact>) :
+    LightScreen<Unit, ImportFileViewModel>(sealedActivity) {
+
+    override val viewModelClass get() = ImportFileViewModel::class.java
+    override fun createViewModel() = ImportFileViewModel(cards)
+
+    @Composable
+    override fun Content() {
+        val message by viewModel.message.collectAsState()
+        val busy by viewModel.busy.collectAsState()
+
+        Box {
+            RolodexPage(
+                title = name,
+                left = backButton { goBack() },
+                bottom = if (busy) emptyList() else listOf(LightBarButton.Text(text = "IMPORT ALL", onClick = viewModel::importAll)),
+            ) {
+                LightText(
+                    "${cards.size} contacts. Tap one to check it before adding it.",
+                    LightTextVariant.Paragraph,
+                    lighten = true,
+                    modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
+                )
+                cards.forEach { c ->
+                    LightText(
+                        text = c.displayName,
+                        variant = LightTextVariant.Copy,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .lightClickable { navigateTo({ EditScreen(it, null, c) }) }
+                            .padding(vertical = 0.6f.gridUnitsAsDp()),
+                    )
+                }
+            }
+            message?.let {
+                LightFullscreenModal(message = it, onClose = {
+                    viewModel.message.value = null
+                    goBack()
+                })
             }
         }
     }

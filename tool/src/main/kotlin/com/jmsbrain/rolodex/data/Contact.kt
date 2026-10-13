@@ -28,6 +28,7 @@ enum class FieldKind(val title: String, val labels: List<String>, val placeholde
 /**
  * One value. [label] is a word like "MOBILE" (or a custom label).
  * [rowIds] is only used by [PhoneContactsSource] to find the rows it came from.
+ * [row] is the synced row it came from, sent back as is while value and label are unchanged.
  */
 @Serializable
 data class ContactField(
@@ -35,9 +36,13 @@ data class ContactField(
     val label: String,
     val value: String,
     val rowIds: List<Long> = emptyList(),
+    val row: Map<String, String> = emptyMap(),
 )
 
-/** A contact. Blank [id] means not saved yet. Dates are stored as yyyy-MM-dd or --MM-dd. */
+/**
+ * A contact. Blank [id] means not saved yet. Dates are stored as yyyy-MM-dd or --MM-dd.
+ * [nameRow] keeps the server's full name (FN) while the name parts are unchanged.
+ */
 @Serializable
 data class Contact(
     val id: String = "",
@@ -46,16 +51,24 @@ data class Contact(
     val middle: String = "",
     val last: String = "",
     val suffix: String = "",
+    val phoneticFirst: String = "",
+    val phoneticMiddle: String = "",
+    val phoneticLast: String = "",
     val company: String = "",
     val title: String = "",
     val department: String = "",
+    val role: String = "",
     val fields: List<ContactField> = emptyList(),
+    val nameRow: Map<String, String> = emptyMap(),
 ) {
     val displayName: String
-        get() = listOf(prefix, first, middle, last, suffix).filter { it.isNotBlank() }.joinToString(" ")
-            .ifEmpty { company }
-            .ifEmpty { fields.firstOrNull { it.kind == FieldKind.PHONE || it.kind == FieldKind.EMAIL }?.value.orEmpty() }
-            .ifEmpty { "(no name)" }
+        get() = ContactRows.syncedDisplayName(this)
+            ?: listOf(prefix, first, middle, last, suffix).filter { it.isNotBlank() }.joinToString(" ")
+                .ifEmpty { company }
+                .ifEmpty { fields.firstOrNull { it.kind == FieldKind.PHONE || it.kind == FieldKind.EMAIL }?.value.orEmpty() }
+                .ifEmpty { "(no name)" }
+
+    val phonetic: String get() = listOf(phoneticFirst, phoneticMiddle, phoneticLast).filter { it.isNotBlank() }.joinToString(" ")
 
     fun fieldsOf(kind: FieldKind) = fields.filter { it.kind == kind }
 }

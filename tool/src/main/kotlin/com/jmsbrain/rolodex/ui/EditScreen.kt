@@ -16,6 +16,7 @@ import com.jmsbrain.rolodex.data.Contacts
 import com.jmsbrain.rolodex.data.FieldKind
 import com.jmsbrain.rolodex.data.dateForEditing
 import com.jmsbrain.rolodex.data.dateForStorage
+import com.jmsbrain.rolodex.sync.CardSync
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
@@ -26,23 +27,26 @@ import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
 import com.thelightphone.sdk.ui.lightClickable
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-/** Result of the editor: the saved contact's id, or "" if it was deleted. */
-class EditViewModel(private val id: String?) : LightViewModel<String>() {
+/** Result of the editor: the saved contact's id, or "" if it was deleted. [prefill]: a new contact's details, e.g. from a .vcf. */
+class EditViewModel(private val id: String?, prefill: Contact? = null) : LightViewModel<String>() {
+    private var original: Contact? = if (id == null) Contact(fields = listOf(ContactField(FieldKind.PHONE, "MOBILE", ""))) else null
+
     /** Being edited. Dates are in MM/DD/YYYY form here. */
-    val draft = MutableStateFlow<Contact?>(if (id == null) Contact(fields = listOf(ContactField(FieldKind.PHONE, "MOBILE", ""))) else null)
-    private var original: Contact? = draft.value
+    val draft = MutableStateFlow(prefill?.let { forEditing(it.copy(id = "")) } ?: original)
     val message = MutableStateFlow<String?>(null)
     val busy = MutableStateFlow(false)
+
+    private fun forEditing(c: Contact) =
+        c.copy(fields = c.fields.map { if (it.kind == FieldKind.DATE) it.copy(value = dateForEditing(it.value)) else it })
 
     override fun onScreenShow(screen: SimpleLightScreen<String>) {
         if (id == null || draft.value != null) return
         viewModelScope.launch {
-            val loaded = Contacts.source.get(id)?.let { c ->
-                c.copy(fields = c.fields.map { if (it.kind == FieldKind.DATE) it.copy(value = dateForEditing(it.value)) else it })
-            }
+            val loaded = Contacts.source.get(id)?.let(::forEditing)
             original = loaded
             draft.value = loaded
         }
@@ -60,20 +64,27 @@ class EditViewModel(private val id: String?) : LightViewModel<String>() {
 
     fun save(done: (String) -> Unit) {
         val d = draft.value ?: return
-        val bad = d.fields.firstOrNull { it.kind == FieldKind.DATE && it.value.isNotBlank() && dateForStorage(it.value) == null }
+        // Only dates typed here must parse; one the server sent stays as it is.
+        val keptDates = original?.fieldsOf(FieldKind.DATE).orEmpty().map { it.value }.toSet()
+        val bad = d.fields.firstOrNull {
+            it.kind == FieldKind.DATE && it.value.isNotBlank() && it.value !in keptDates && dateForStorage(it.value) == null
+        }
         if (bad != null) {
             message.value = "Can't read the date \"${bad.value}\". Use MM/DD/YYYY, or MM/DD without a year."
             return
         }
         val toSave = d.copy(
             fields = d.fields.filter { it.value.isNotBlank() }
-                .map { if (it.kind == FieldKind.DATE) it.copy(value = dateForStorage(it.value)!!) else it.copy(value = it.value.trim()) },
+                .map { if (it.kind == FieldKind.DATE) it.copy(value = dateForStorage(it.value) ?: it.value.trim()) else it.copy(value = it.value.trim()) },
         )
         if (toSave.id.isBlank() && toSave == Contact()) return done("")
         busy.value = true
         viewModelScope.launch {
             runCatching { Contacts.source.save(toSave) }
-                .onSuccess { done(it.id) }
+                .onSuccess {
+                    CardSync.syncSoon()
+                    done(it.id)
+                }
                 .onFailure { message.value = "Couldn't save this contact." }
             busy.value = false
         }
@@ -83,17 +94,20 @@ class EditViewModel(private val id: String?) : LightViewModel<String>() {
         val contactId = id ?: return
         viewModelScope.launch {
             runCatching { Contacts.source.delete(contactId) }
-                .onSuccess { done() }
+                .onSuccess {
+                    CardSync.syncSoon()
+                    done()
+                }
                 .onFailure { message.value = "Couldn't delete this contact." }
         }
     }
 }
 
-class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
+class EditScreen(sealedActivity: SealedLightActivity, private val id: String?, private val prefill: Contact? = null) :
     LightScreen<String, EditViewModel>(sealedActivity) {
 
     override val viewModelClass get() = EditViewModel::class.java
-    override fun createViewModel() = EditViewModel(id)
+    override fun createViewModel() = EditViewModel(id, prefill)
 
     private fun cancel() {
         if (!viewModel.changed) return goBack(null)
@@ -152,11 +166,6 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
     }
 
     @Composable
-    private fun Heading(title: String) {
-        LightText(title, LightTextVariant.Detail, lighten = true, modifier = Modifier.padding(top = 1.5f.gridUnitsAsDp()))
-    }
-
-    @Composable
     private fun Field(label: String, value: String, placeholder: String, onClick: () -> Unit) =
         TapField(label, value, placeholder, onClick)
 
@@ -168,12 +177,14 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?) :
             if (field.kind != kind) return@forEachIndexed
             Row(Modifier.fillMaxWidth().padding(top = 0.5f.gridUnitsAsDp()), verticalAlignment = Alignment.CenterVertically) {
                 if (kind.labels.isNotEmpty()) {
+                    // A type not in the list (WORK FAX, a custom label) stays choosable.
+                    val options = if (field.label in kind.labels) kind.labels else listOf(field.label) + kind.labels
                     LightText(
-                        text = field.label,
+                        text = field.label.uppercase(Locale.getDefault()),
                         variant = LightTextVariant.Detail,
                         underline = true,
                         modifier = Modifier.lightClickable {
-                            navigateTo({ ChoiceScreen(it, kind.title, kind.labels, field.label) }) { label ->
+                            navigateTo({ ChoiceScreen(it, kind.title, options, field.label) }) { label ->
                                 viewModel.setField(index, field.copy(label = label))
                             }
                         },

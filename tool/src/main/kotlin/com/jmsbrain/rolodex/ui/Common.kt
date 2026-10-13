@@ -1,6 +1,11 @@
 package com.jmsbrain.rolodex.ui
 
+import android.content.ClipData
+import android.text.format.DateUtils
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -11,8 +16,19 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.SealedLightActivity
+import com.thelightphone.sdk.ui.LightModal
+import com.thelightphone.sdk.ui.LightModalManager
+import java.util.Locale
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.rememberKeyboardOptions
 import com.thelightphone.sdk.ui.LightBarButton
@@ -158,4 +174,83 @@ class ConfirmScreen(
             LightText(text = message, variant = LightTextVariant.Paragraph)
         }
     }
+}
+
+/** Section heading, e.g. PHONE. */
+@Composable
+fun Heading(title: String) {
+    LightText(title, LightTextVariant.Detail, lighten = true, modifier = Modifier.padding(top = 1.5f.gridUnitsAsDp()))
+}
+
+/** A tappable word in the page, e.g. SYNC NOW. */
+@Composable
+fun TextAction(label: String, onClick: () -> Unit) {
+    LightText(
+        text = label,
+        variant = LightTextVariant.Button,
+        modifier = Modifier
+            .lightClickable(onClick = onClick)
+            .padding(vertical = 0.5f.gridUnitsAsDp()),
+    )
+}
+
+/** Dimmed explanation text. */
+@Composable
+fun Dim(text: String) = LightText(text, LightTextVariant.Paragraph, lighten = true)
+
+/** Tap and long-press, without a press effect. */
+@OptIn(ExperimentalFoundationApi::class)
+fun Modifier.tapAndHold(onTap: (() -> Unit)?, onHold: () -> Unit): Modifier =
+    combinedClickable(interactionSource = null, indication = null, onLongClick = onHold, onClick = { onTap?.invoke() })
+
+// Not tied to a screen: the copy can finish after the screen is gone.
+private val uiScope = MainScope()
+
+/** Copies text and says so. */
+@Composable
+fun rememberCopy(): (String) -> Unit {
+    val clipboard = LocalClipboard.current
+    return remember(clipboard) {
+        { text: String ->
+            uiScope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("contact", text))) }
+            showNotice("Copied")
+        }
+    }
+}
+
+/** A short message at the bottom of the screen that goes away by itself. */
+fun showNotice(text: String) = LightModalManager.show(Notice(text))
+
+private class Notice(private val text: String) : LightModal {
+    private val done = CompletableDeferred<Unit>()
+    override val onExpired: () -> Unit = {}
+    override fun dismiss() {
+        done.complete(Unit)
+    }
+
+    override suspend fun awaitDismiss() = done.await()
+
+    @Composable
+    override fun Content() {
+        val colors by LightThemeController.colors.collectAsState()
+        LightTheme(colors = colors) {
+            Box(Modifier.fillMaxSize().padding(bottom = 6f.gridUnitsAsDp()), contentAlignment = Alignment.BottomCenter) {
+                LightText(
+                    text = text,
+                    variant = LightTextVariant.Copy,
+                    modifier = Modifier
+                        .background(LightThemeTokens.colors.background)
+                        .border(1.dp, LightThemeTokens.colors.content)
+                        .padding(horizontal = 1f.gridUnitsAsDp(), vertical = 0.5f.gridUnitsAsDp()),
+                )
+            }
+        }
+    }
+}
+
+/** "5 MINUTES AGO", or "JUST NOW". */
+fun ago(time: Long): String {
+    val now = System.currentTimeMillis()
+    return if (now - time < DateUtils.MINUTE_IN_MILLIS) "JUST NOW"
+    else DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS).toString().uppercase(Locale.getDefault())
 }

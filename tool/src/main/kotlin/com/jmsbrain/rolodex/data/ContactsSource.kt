@@ -3,7 +3,7 @@ package com.jmsbrain.rolodex.data
 /**
  * Where contacts live. Everything else in the tool only talks to this.
  *
- * Today: [LocalContactsSource] (a list inside the tool, filled by .vcf import).
+ * Today: [LocalContactsSource] (a list inside the tool, filled by .vcf import and CardDAV sync).
  * Once LightOS allows contacts access: [PhoneContactsSource] (the phone's own,
  * synced contacts). See ENABLE_PHONE_CONTACTS.md.
  */
@@ -24,6 +24,7 @@ object Contacts {
     lateinit var source: ContactsSource
         private set
 
+    @Synchronized
     fun init(make: () -> ContactsSource) {
         if (!::source.isInitialized) source = make()
     }

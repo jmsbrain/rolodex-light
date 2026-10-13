@@ -24,15 +24,16 @@ The plain-Android version (the one in daily use) is https://github.com/jmsbrain/
 - Tag releases `rolodex-vX.Y.Z`, never plain `vX.Y.Z`: those tags are Light's SDK versions, which this fork inherits.
 - Keep code comments short, in the owner's voice. No long explanations (Light's AI/LLM policy).
 - Never post to Light's GitHub (issues, discussions, PRs) for the owner. Drafts are notes for them to rewrite.
-- Contacts all go through `ContactsSource` (`tool/.../data/`). Don't touch Android contacts directly anywhere else.
+- Contacts all go through `ContactsSource` (`tool/.../data/`). Don't touch Android contacts directly anywhere else. Sync (`tool/.../sync/`) uses `LocalContactsSource`'s sync methods.
+- Keep sync behavior in step with plain-Android Rolodex (`CardSync.kt`, `SyncCard.kt`). `data/VCard.kt` and `sync/SyncMerge.kt` are ports of its `SyncCard.kt`; the tests in `tool/src/test/` mirror its `SyncCardTest.kt`.
 
 ## Check before calling something done
 
 ```
-./gradlew :tool:assembleDebug :tool:lintDebug
+./gradlew :tool:assembleDebug :tool:lintDebug :tool:testDebugUnitTest
 ```
 
-Both must pass. The first runs Light's config and source checks; the second runs Light's lint rules.
+All must pass. The first runs Light's config and source checks; the second runs Light's lint rules; the third runs Rolodex's tests.
 
 ## Testing
 

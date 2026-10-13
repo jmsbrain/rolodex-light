@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds Rolodex for the LightOS emulator, installs it on the Light_Phone emulator, and opens it.
+# Builds Rolodex Light for the LightOS emulator, installs it on the Light_Phone emulator, and opens it.
 # Targets the emulator by serial so a Light Phone plugged in over USB is never touched.
 # --testdata also copies tool/testdata/vcf into the tool's import folder.
 set -e
@@ -33,8 +33,8 @@ if [ "$1" = "--testdata" ]; then
     for f in tool/testdata/vcf/*.vcf; do
         MSYS_NO_PATHCONV=1 "$ADB" -s "$SERIAL" shell "run-as $TOOL sh -c 'mkdir -p files/shared/import && cat > files/shared/import/$(basename "$f")'" < "$f"
     done
-    echo "Test .vcf files copied to Rolodex's import folder."
+    echo "Test .vcf files copied to Rolodex Light's import folder."
 fi
 
 "$ADB" -s "$SERIAL" shell monkey -p "$TOOL" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
-echo "Rolodex installed and opened on the Light_Phone emulator."
+echo "Rolodex Light installed and opened on the Light_Phone emulator."

@@ -79,8 +79,8 @@ object CardSync {
 
         suspend fun all(): String? {
             val user = SyncSettings.user ?: return null
-            val password = SyncSettings.password ?: return "Rolodex lost your password. Sign in again."
-            val home = SyncSettings.home ?: return "Rolodex lost your sign-in. Sign in again."
+            val password = SyncSettings.password ?: return "Rolodex Light lost your password. Sign in again."
+            val home = SyncSettings.home ?: return "Rolodex Light lost your sign-in. Sign in again."
             dav = CardDav(user, password)
 
             // Refresh the list of address books, keeping choices and sync state.

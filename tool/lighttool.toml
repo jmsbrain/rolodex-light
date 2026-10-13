@@ -1,6 +1,6 @@
 [tool]
 id = "com.jmsbrain.rolodex"
-label = "Rolodex"
+label = "Rolodex Light"
 versionCode = 5
 versionName = "0.2.0"
 # INTERNET: CardDAV sync, only with the server the user signs in to.

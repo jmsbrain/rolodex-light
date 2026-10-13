@@ -91,7 +91,7 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
         val shown = contacts.orEmpty().filter { q.isEmpty() || it.displayName.contains(q, ignoreCase = true) }
 
         RolodexPage(
-            title = "Rolodex",
+            title = "Rolodex Light",
             bottom = buildList {
                 add(LightBarButton.Text(text = "ADD", onClick = {
                     navigateTo({ EditScreen(it, null) }) { id -> if (id.isNotEmpty()) navigateTo({ ContactScreen(it, id) }) }

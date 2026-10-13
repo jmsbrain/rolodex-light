@@ -15,13 +15,13 @@ object Folders {
 @EntryPoint
 object ToolEntryPoint : LightEntryPoint {
     override fun getToolManagerManifest() = ClientToolManifest(
-        title = "Rolodex",
+        title = "Rolodex Light",
         roots = listOf(
             ClientLeafNode(
                 FileBrowserSpec(
                     label = "Import contacts",
                     path = Folders.IMPORT,
-                    headerText = "Upload .vcf files here, then open Rolodex and tap IMPORT.",
+                    headerText = "Upload .vcf files here, then open Rolodex Light and tap IMPORT.",
                 ),
             ),
             ClientLeafNode(

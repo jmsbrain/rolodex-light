@@ -1,7 +1,9 @@
 package com.jmsbrain.rolodex.ui
 
 import android.content.ClipData
+import android.content.res.Configuration
 import android.text.format.DateUtils
+import android.util.DisplayMetrics
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,11 +24,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.ui.LightModal
 import com.thelightphone.sdk.ui.LightModalManager
 import java.util.Locale
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -115,15 +122,17 @@ class TextEditScreen(
         val keyboard = rememberKeyboardOptions()
         val state = rememberTextFieldState(initial)
         RolodexTheme {
-            LightTextInputEditor(
-                title = title,
-                state = state,
-                keyboardOptionsFlow = keyboard,
-                onSubmit = { goBack(it.toString()) },
-                onBack = { goBack(null) },
-                initialCaps = caps && initial.isBlank(),
-                singleLine = singleLine,
-            )
+            DefaultDisplaySize {
+                LightTextInputEditor(
+                    title = title,
+                    state = state,
+                    keyboardOptionsFlow = keyboard,
+                    onSubmit = { goBack(it.toString()) },
+                    onBack = { goBack(null) },
+                    initialCaps = caps && initial.isBlank(),
+                    singleLine = singleLine,
+                )
+            }
         }
     }
 }
@@ -260,4 +269,24 @@ fun ago(time: Long): String {
 @Composable
 fun MessageOr(message: String?, onClose: () -> Unit, page: @Composable () -> Unit) {
     if (message != null) RolodexTheme { LightFullscreenModal(message = message, onClose = onClose) } else page()
+}
+
+/** The phone's default display size. A smaller Display size setting shrinks the SDK keyboard; LightOS's own doesn't. */
+@Composable
+fun DefaultDisplaySize(content: @Composable () -> Unit) {
+    val current = LocalDensity.current
+    val config = LocalConfiguration.current
+    val stable = DisplayMetrics.DENSITY_DEVICE_STABLE
+    val density = stable / DisplayMetrics.DENSITY_DEFAULT.toFloat()
+    // Same pixels, counted in default-size dp (the SDK's grid sizes from these).
+    val defaultConfig = Configuration(config).apply {
+        densityDpi = stable
+        screenWidthDp = (config.screenWidthDp * current.density / density).roundToInt()
+        screenHeightDp = (config.screenHeightDp * current.density / density).roundToInt()
+    }
+    CompositionLocalProvider(
+        LocalDensity provides Density(density, current.fontScale),
+        LocalConfiguration provides defaultConfig,
+        content = content,
+    )
 }

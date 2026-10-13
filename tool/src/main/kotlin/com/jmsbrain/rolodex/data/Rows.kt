@@ -211,6 +211,10 @@ object SyncFields {
         a.size == b.size && a.map { it.sortKey }.sorted() == b.map { it.sortKey }.sorted()
 
     fun byMime(rows: List<SyncRow>): Map<String, List<SyncRow>> = rows.groupBy { it.mime }
+
+    /** [rows] with the kinds in [replace] swapped for its rows. */
+    fun replaceKinds(rows: List<SyncRow>, replace: Map<String, List<SyncRow>>): List<SyncRow> =
+        (rows.filter { it.mime !in replace.keys } + replace.values.flatten()).sortedBy { mimes.indexOf(it.mime) }
 }
 
 /** [Contact] ↔ rows. Rows read back into a contact turn into the same rows again. */

@@ -33,6 +33,7 @@ import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.rememberKeyboardOptions
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightBottomBar
+import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightScrollView
 import com.thelightphone.sdk.ui.LightText
@@ -253,4 +254,10 @@ fun ago(time: Long): String {
     val now = System.currentTimeMillis()
     return if (now - time < DateUtils.MINUTE_IN_MILLIS) "JUST NOW"
     else DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS).toString().uppercase(Locale.getDefault())
+}
+
+/** [message] instead of the page, not over it: the SDK modal lets taps through to the page. */
+@Composable
+fun MessageOr(message: String?, onClose: () -> Unit, page: @Composable () -> Unit) {
+    if (message != null) RolodexTheme { LightFullscreenModal(message = message, onClose = onClose) } else page()
 }

@@ -26,7 +26,6 @@ import com.thelightphone.sdk.callRemoteServiceMethod
 import com.thelightphone.sdk.shared.LightServiceMethod
 import com.thelightphone.sdk.shared.error
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
@@ -100,7 +99,7 @@ class ContactScreen(sealedActivity: SealedLightActivity, private val id: String)
         val copy = rememberCopy()
         val c = contact
 
-        Box {
+        MessageOr(message, onClose = { viewModel.message.value = null }) {
             RolodexPage(
                 title = "",
                 left = backButton { goBack() },
@@ -118,7 +117,6 @@ class ContactScreen(sealedActivity: SealedLightActivity, private val id: String)
                     else -> LightText("Loading…", LightTextVariant.Copy, lighten = true)
                 }
             }
-            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
         }
     }
 

@@ -3,6 +3,7 @@ package com.jmsbrain.rolodex
 import com.jmsbrain.rolodex.data.Contact
 import com.jmsbrain.rolodex.data.ContactField
 import com.jmsbrain.rolodex.data.ContactRows
+import com.jmsbrain.rolodex.data.Email
 import com.jmsbrain.rolodex.data.FieldKind
 import com.jmsbrain.rolodex.data.LocalContactsSource
 import com.jmsbrain.rolodex.data.Phone
@@ -130,6 +131,42 @@ class ContactRowsTest {
         store.finishSync(saved.id, entry.meta.version, saved, SyncMeta(href = "https://x/a.vcf", etag = "1"), ContactRows.toRows(saved))
         assertFalse(store.syncEntries().single().meta.dirty)
         store.delete(saved.id)
+        assertEquals("https://x/a.vcf", store.tombstones().single().href)
+        assertTrue(store.list().isEmpty())
+    }
+
+    @Test
+    fun editDuringSyncStillTakesServerChangesToOtherKinds() = runBlocking {
+        val dir = tempDir()
+        val store = LocalContactsSource(dir) { true }
+        val saved = store.save(Contact(first = "Ann", fields = listOf(ContactField(FieldKind.EMAIL, "HOME", "a@x.org"))))
+        val entry = store.syncEntries().single()
+        val read = ContactRows.toRows(saved)
+        // Edited the phone while the sync ran; the server changed the email.
+        store.save(saved.copy(fields = saved.fields + ContactField(FieldKind.PHONE, "MOBILE", "555")))
+        val serverEmail = ContactRows.toRows(Contact(fields = listOf(ContactField(FieldKind.EMAIL, "HOME", "b@x.org")))).filter { it.mime == Email.CONTENT_ITEM_TYPE }
+        val pull = mapOf(Email.CONTENT_ITEM_TYPE to serverEmail)
+        store.finishSync(saved.id, entry.meta.version, saved, SyncMeta(href = "https://x/a.vcf", etag = "1"), read, pull)
+        val after = store.syncEntries().single()
+        assertEquals(listOf("b@x.org"), after.contact.fieldsOf(FieldKind.EMAIL).map { it.value })
+        assertEquals(listOf("555"), after.contact.fieldsOf(FieldKind.PHONE).map { it.value })
+        assertTrue(after.meta.dirty)
+        // Only the phone edit is left to upload.
+        val changed = SyncFields.byMime(ContactRows.toRows(after.contact)).filter { (mime, rows) ->
+            !SyncFields.same(rows, SyncFields.byMime(after.meta.snapshot!!)[mime].orEmpty())
+        }.keys
+        assertEquals(setOf(Phone.CONTENT_ITEM_TYPE), changed)
+    }
+
+    @Test
+    fun deletedDuringSyncDeletesOnTheServerToo() = runBlocking {
+        val dir = tempDir()
+        val store = LocalContactsSource(dir) { true }
+        val saved = store.save(Contact(first = "Ann"))
+        val entry = store.syncEntries().single()
+        store.delete(saved.id)
+        // The upload finished after the delete.
+        store.finishSync(saved.id, entry.meta.version, saved, SyncMeta(href = "https://x/a.vcf", etag = "1"), ContactRows.toRows(saved))
         assertEquals("https://x/a.vcf", store.tombstones().single().href)
         assertTrue(store.list().isEmpty())
     }

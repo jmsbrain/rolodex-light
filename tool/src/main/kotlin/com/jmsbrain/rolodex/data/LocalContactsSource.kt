@@ -115,19 +115,41 @@ class LocalContactsSource(dir: File, private val syncNewContacts: () -> Boolean 
 
     /**
      * Records a finished sync of [id]: [contact] and [meta] replace what's stored. If the contact was edited since it
-     * was read ([readVersion]), the edit stays and only the server's state is recorded, compared to [readRows].
+     * was read ([readVersion]), the edit stays and uploads next time. Of the server's changes ([pullDown]), it takes
+     * only kinds the edit didn't touch, so none are missed.
      */
-    suspend fun finishSync(id: String, readVersion: Long, contact: Contact, meta: SyncMeta, readRows: List<SyncRow>) = lock.withLock {
+    suspend fun finishSync(
+        id: String,
+        readVersion: Long,
+        contact: Contact,
+        meta: SyncMeta,
+        readRows: List<SyncRow>,
+        pullDown: Map<String, List<SyncRow>> = emptyMap(),
+    ) = lock.withLock {
         val s = load()
+        val now = s.contacts.firstOrNull { it.id == id }
+        if (now == null) {
+            // Deleted during the sync: delete the server's copy next time too.
+            val href = meta.href
+            if (href != null && s.deleted.none { it.href == href }) write(s.copy(deleted = s.deleted + Tombstone(href, meta.etag)))
+            return@withLock
+        }
         val current = s.sync[id] ?: return@withLock
-        if (s.contacts.none { it.id == id }) return@withLock
         if (current.version == readVersion) {
             write(s.copy(
                 contacts = s.contacts.map { if (it.id == id) contact.copy(id = id) else it },
                 sync = s.sync + (id to meta.copy(dirty = false, version = current.version)),
             ))
         } else {
-            write(s.copy(sync = s.sync + (id to meta.copy(snapshot = readRows, dirty = true, version = current.version))))
+            val nowRows = ContactRows.toRows(now)
+            val mine = SyncFields.byMime(nowRows)
+            val read = SyncFields.byMime(readRows)
+            val take = pullDown.filterKeys { SyncFields.same(mine[it].orEmpty(), read[it].orEmpty()) }
+            val kept = if (take.isEmpty()) now else ContactRows.fromRows(SyncFields.replaceKinds(nowRows, take), id)
+            write(s.copy(
+                contacts = s.contacts.map { if (it.id == id) kept else it },
+                sync = s.sync + (id to meta.copy(snapshot = SyncFields.replaceKinds(readRows, take), dirty = true, version = current.version)),
+            ))
         }
     }
 

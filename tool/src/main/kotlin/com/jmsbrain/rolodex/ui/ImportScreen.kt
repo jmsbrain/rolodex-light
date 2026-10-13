@@ -19,7 +19,6 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
@@ -29,27 +28,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>() {
+class ImportViewModel(private val files: LightFileShare) : LightViewModel<String>() {
     val vcfFiles = MutableStateFlow<List<String>>(emptyList())
     val message = MutableStateFlow<String?>(null)
+    val reading = MutableStateFlow(false)
 
-    override fun onScreenShow(screen: SimpleLightScreen<Unit>) {
+    override fun onScreenShow(screen: SimpleLightScreen<String>) {
+        reading.value = false
         vcfFiles.value = files.list(Folders.IMPORT)
             .filter { it.isFile && (it.name.endsWith(".vcf", true) || it.name.endsWith(".vcard", true)) }
             .map { it.name }
             .sorted()
     }
 
-    /** Reads [name]; [open] gets its contacts. */
-    fun read(name: String, open: (List<Contact>) -> Unit) {
+    /** Reads [name]; [open] gets its contacts, [fail] what went wrong. One at a time, so a second tap can't open it twice. */
+    fun read(name: String, open: (List<Contact>) -> Unit, fail: (String) -> Unit) {
+        if (reading.value) return
+        reading.value = true
         viewModelScope.launch {
             // Null = missing or unreadable, not just empty.
             val cards = withContext(Dispatchers.IO) {
                 runCatching { files.read("${Folders.IMPORT}/$name") { VCard.parse(it.readText()) } }.getOrNull()
             }
             when {
-                cards == null -> message.value = "Couldn't open $name."
-                cards.isEmpty() -> message.value = "No contacts found in $name."
+                cards == null -> fail("Couldn't open $name.")
+                cards.isEmpty() -> fail("No contacts found in $name.")
                 else -> open(cards)
             }
         }
@@ -66,24 +69,32 @@ class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>(
     }
 }
 
-/** Imports .vcf files uploaded through Tool Manager, and exports a backup. */
-class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, ImportViewModel>(sealedActivity) {
+/** Imports .vcf files uploaded through Tool Manager, and exports a backup. Returns the import result for the list. */
+class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, ImportViewModel>(sealedActivity) {
 
     override val viewModelClass get() = ImportViewModel::class.java
     override fun createViewModel() = ImportViewModel(lightContext.fileShare)
 
-    private fun open(name: String) = viewModel.read(name) { cards ->
-        // One contact: check it in the editor. Several: a list.
-        if (cards.size == 1) navigateTo({ EditScreen(it, null, cards.single()) })
-        else navigateTo({ ImportFileScreen(it, name, cards) })
-    }
+    private fun open(name: String) = viewModel.read(
+        name,
+        open = { cards ->
+            // One contact: check it in the editor. Several: a list.
+            if (cards.size == 1) {
+                navigateTo({ EditScreen(it, null, cards.single()) }) { id -> if (id.isNotEmpty()) goBack("Imported 1 contact from $name.") }
+            } else {
+                navigateTo({ ImportFileScreen(it, name, cards) }) { goBack(it) }
+            }
+        },
+        fail = { goBack(it) },
+    )
 
     @Composable
     override fun Content() {
         val vcfFiles by viewModel.vcfFiles.collectAsState()
         val message by viewModel.message.collectAsState()
+        val reading by viewModel.reading.collectAsState()
 
-        Box {
+        MessageOr(message, onClose = { viewModel.message.value = null }) {
             RolodexPage(
                 title = "Import",
                 left = backButton { goBack() },
@@ -95,8 +106,9 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, Impo
                     lighten = true,
                     modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
                 )
-                if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
-                vcfFiles.forEach { name ->
+                if (reading) LightText("Reading…", LightTextVariant.Copy, lighten = true)
+                else if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
+                else vcfFiles.forEach { name ->
                     LightText(
                         text = name,
                         variant = LightTextVariant.Copy,
@@ -107,68 +119,65 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, Impo
                     )
                 }
             }
-            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
         }
     }
 }
 
-class ImportFileViewModel(private val cards: List<Contact>) : LightViewModel<Unit>() {
-    val message = MutableStateFlow<String?>(null)
+class ImportFileViewModel(private val cards: List<Contact>) : LightViewModel<String>() {
     val busy = MutableStateFlow(false)
 
-    fun importAll() {
+    /** Saves them all, then [done] gets the result. Once only, so a second tap can't import twice. */
+    fun importAll(name: String, done: (String) -> Unit) {
+        if (busy.value) return
         busy.value = true
         viewModelScope.launch {
             val saved = cards.count { c -> runCatching { Contacts.source.save(c.copy(id = "")) }.isSuccess }
             CardSync.syncSoon()
-            busy.value = false
-            message.value = if (saved == cards.size) "Imported $saved contacts." else "Imported $saved of ${cards.size} contacts."
+            done(if (saved == cards.size) "Imported $saved contacts from $name." else "Imported $saved of ${cards.size} contacts from $name.")
         }
     }
 }
 
-/** The contacts in one .vcf: IMPORT ALL, or tap one to check it first. */
+/** The contacts in one .vcf: IMPORT ALL, or tap one to check it first. Returns the IMPORT ALL result. */
 class ImportFileScreen(sealedActivity: SealedLightActivity, private val name: String, private val cards: List<Contact>) :
-    LightScreen<Unit, ImportFileViewModel>(sealedActivity) {
+    LightScreen<String, ImportFileViewModel>(sealedActivity) {
 
     override val viewModelClass get() = ImportFileViewModel::class.java
     override fun createViewModel() = ImportFileViewModel(cards)
 
     @Composable
     override fun Content() {
-        val message by viewModel.message.collectAsState()
         val busy by viewModel.busy.collectAsState()
 
-        Box {
-            RolodexPage(
-                title = name,
-                left = backButton { goBack() },
-                bottom = if (busy) emptyList() else listOf(LightBarButton.Text(text = "IMPORT ALL", onClick = viewModel::importAll)),
-            ) {
+        RolodexPage(
+            title = name,
+            left = if (busy) null else backButton { goBack() },
+            bottom = if (busy) emptyList() else listOf(
+                LightBarButton.Text(text = "IMPORT ALL", onClick = { viewModel.importAll(name) { goBack(it) } }),
+            ),
+        ) {
+            if (busy) {
+                LightText("Importing…", LightTextVariant.Copy, lighten = true)
+                return@RolodexPage
+            }
+            LightText(
+                "${cards.size} contacts. Tap one to check it before adding it.",
+                LightTextVariant.Paragraph,
+                lighten = true,
+                modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
+            )
+            cards.forEach { c ->
                 LightText(
-                    "${cards.size} contacts. Tap one to check it before adding it.",
-                    LightTextVariant.Paragraph,
-                    lighten = true,
-                    modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
+                    text = c.displayName,
+                    variant = LightTextVariant.Copy,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .lightClickable { navigateTo({ EditScreen(it, null, c) }) }
+                        .padding(vertical = 0.6f.gridUnitsAsDp()),
                 )
-                cards.forEach { c ->
-                    LightText(
-                        text = c.displayName,
-                        variant = LightTextVariant.Copy,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .lightClickable { navigateTo({ EditScreen(it, null, c) }) }
-                            .padding(vertical = 0.6f.gridUnitsAsDp()),
-                    )
-                }
             }
-            message?.let {
-                LightFullscreenModal(message = it, onClose = {
-                    viewModel.message.value = null
-                    goBack()
-                })
-            }
+            Box(Modifier.padding(bottom = 2f.gridUnitsAsDp()))
         }
     }
 }

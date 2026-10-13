@@ -22,7 +22,6 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
@@ -124,7 +123,7 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?, p
         val busy by viewModel.busy.collectAsState()
         val d = draft
 
-        Box {
+        MessageOr(message, onClose = { viewModel.message.value = null }) {
             RolodexPage(
                 title = if (id == null) "New contact" else "Edit",
                 left = LightBarButton.Text(text = "CANCEL", onClick = ::cancel),
@@ -161,7 +160,6 @@ class EditScreen(sealedActivity: SealedLightActivity, private val id: String?, p
                     .forEach { Items(d, it) }
                 Box(Modifier.padding(bottom = 2f.gridUnitsAsDp()))
             }
-            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
         }
     }
 

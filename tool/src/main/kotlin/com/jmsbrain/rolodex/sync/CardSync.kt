@@ -49,6 +49,9 @@ object CardSync {
         if (System.currentTimeMillis() - last > AUTO_SYNC_MS) syncSoon()
     }
 
+    /** Runs [block] once no sync is running, e.g. signing out. */
+    suspend fun <T> whenIdle(block: suspend () -> T): T = lock.withLock { block() }
+
     /** Returns the error, or null if it worked. Waits if a sync is already running. */
     suspend fun sync(): String? = lock.withLock {
         val store = Contacts.source as? LocalContactsSource
@@ -311,12 +314,10 @@ object CardSync {
             val contact = if (pullDown.isEmpty()) {
                 e.contact
             } else {
-                val rows = (readRows.filter { it.mime !in pullDown.keys } + pullDown.values.flatten())
-                    .sortedBy { SyncFields.mimes.indexOf(it.mime) }
-                ContactRows.fromRows(rows, e.contact.id)
+                ContactRows.fromRows(SyncFields.replaceKinds(readRows, pullDown), e.contact.id)
             }
             val meta = SyncMeta(href = href, etag = etag, base = card.withoutBinary().text(), snapshot = ContactRows.toRows(contact))
-            store.finishSync(e.contact.id, e.meta.version, contact, meta, readRows)
+            store.finishSync(e.contact.id, e.meta.version, contact, meta, readRows, pullDown)
         }
     }
 

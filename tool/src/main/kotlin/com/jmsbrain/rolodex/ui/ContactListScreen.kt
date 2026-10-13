@@ -36,6 +36,7 @@ class ContactListViewModel : LightViewModel<Unit>() {
     private val all = MutableStateFlow<List<Contact>?>(null)
     val contacts: StateFlow<List<Contact>?> = all
     val query = MutableStateFlow("")
+    val message = MutableStateFlow<String?>(null)
 
     /** Bumped on show, so the sync line re-reads its settings. */
     val shown = MutableStateFlow(0)
@@ -76,6 +77,12 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
 
     @Composable
     override fun Content() {
+        val message by viewModel.message.collectAsState()
+        MessageOr(message, onClose = { viewModel.message.value = null }) { Page() }
+    }
+
+    @Composable
+    private fun Page() {
         val contacts by viewModel.contacts.collectAsState()
         val query by viewModel.query.collectAsState()
         val syncState by CardSync.state.collectAsState()
@@ -90,7 +97,9 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
                     navigateTo({ EditScreen(it, null) }) { id -> if (id.isNotEmpty()) navigateTo({ ContactScreen(it, id) }) }
                 }))
                 if (!Contacts.source.usesPhoneContacts) {
-                    add(LightBarButton.Text(text = "IMPORT", onClick = { navigateTo({ ImportScreen(it) }) }))
+                    add(LightBarButton.Text(text = "IMPORT", onClick = {
+                        navigateTo({ ImportScreen(it) }) { viewModel.message.value = it }
+                    }))
                 }
             },
         ) {

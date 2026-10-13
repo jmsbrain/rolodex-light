@@ -22,7 +22,6 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightFullscreenModal
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
@@ -136,9 +135,14 @@ class SyncViewModel : LightViewModel<Unit>() {
     }
 
     fun signOut(onSignedOut: () -> Unit) {
+        busy.value = true
         viewModelScope.launch {
-            store?.forgetSync()
-            SyncSettings.signOut()
+            // Not halfway through a sync, or it would bring contacts back.
+            CardSync.whenIdle {
+                store?.forgetSync()
+                SyncSettings.signOut()
+            }
+            busy.value = false
             onSignedOut()
             refresh()
         }
@@ -164,7 +168,7 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
         val message by viewModel.message.collectAsState()
         val signedIn = SyncSettings.signedIn
 
-        Box {
+        MessageOr(message, onClose = { viewModel.message.value = null }) {
             RolodexPage(
                 title = "Sync",
                 left = backButton { goBack() },
@@ -177,7 +181,6 @@ class SyncScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, SyncVi
                 if (signedIn) SignedIn() else SignInForm(busy)
                 Box(Modifier.padding(bottom = 2f.gridUnitsAsDp()))
             }
-            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
         }
     }
 

@@ -123,22 +123,39 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, Im
     }
 }
 
-class ImportFileViewModel(private val cards: List<Contact>) : LightViewModel<String>() {
+class ImportFileViewModel(cards: List<Contact>) : LightViewModel<String>() {
+    /** Not added yet. One checked in the editor and saved leaves the list. */
+    val left = MutableStateFlow(cards)
     val busy = MutableStateFlow(false)
+    private var added = 0
 
-    /** Saves them all, then [done] gets the result. Once only, so a second tap can't import twice. */
-    fun importAll(name: String, done: (String) -> Unit) {
+    fun added(c: Contact) {
+        left.value = left.value - c
+        added++
+    }
+
+    /** What was added, for the list; null if nothing. */
+    fun result(name: String, failed: Int = 0): String? = when {
+        added == 0 && failed == 0 -> null
+        failed == 0 -> if (added == 1) "Imported 1 contact from $name." else "Imported $added contacts from $name."
+        else -> "Imported $added of ${added + failed} contacts from $name."
+    }
+
+    /** Saves the rest, then [done] gets the result. Once only, so a second tap can't import twice. */
+    fun importAll(name: String, done: (String?) -> Unit) {
         if (busy.value) return
         busy.value = true
         viewModelScope.launch {
-            val saved = cards.count { c -> runCatching { Contacts.source.save(c.copy(id = "")) }.isSuccess }
+            val rest = left.value
+            val saved = rest.count { c -> runCatching { Contacts.source.save(c.copy(id = "")) }.isSuccess }
+            added += saved
             CardSync.syncSoon()
-            done(if (saved == cards.size) "Imported $saved contacts from $name." else "Imported $saved of ${cards.size} contacts from $name.")
+            done(result(name, rest.size - saved))
         }
     }
 }
 
-/** The contacts in one .vcf: IMPORT ALL, or tap one to check it first. Returns the IMPORT ALL result. */
+/** The contacts in one .vcf: IMPORT ALL, or tap one to check it first. Returns what was imported. */
 class ImportFileScreen(sealedActivity: SealedLightActivity, private val name: String, private val cards: List<Contact>) :
     LightScreen<String, ImportFileViewModel>(sealedActivity) {
 
@@ -148,11 +165,12 @@ class ImportFileScreen(sealedActivity: SealedLightActivity, private val name: St
     @Composable
     override fun Content() {
         val busy by viewModel.busy.collectAsState()
+        val left by viewModel.left.collectAsState()
 
         RolodexPage(
             title = name,
-            left = if (busy) null else backButton { goBack() },
-            bottom = if (busy) emptyList() else listOf(
+            left = if (busy) null else backButton { goBack(viewModel.result(name)) },
+            bottom = if (busy || left.isEmpty()) emptyList() else listOf(
                 LightBarButton.Text(text = "IMPORT ALL", onClick = { viewModel.importAll(name) { goBack(it) } }),
             ),
         ) {
@@ -161,19 +179,19 @@ class ImportFileScreen(sealedActivity: SealedLightActivity, private val name: St
                 return@RolodexPage
             }
             LightText(
-                "${cards.size} contacts. Tap one to check it before adding it.",
+                if (left.isEmpty()) "All added." else "${left.size} contacts. Tap one to check it before adding it.",
                 LightTextVariant.Paragraph,
                 lighten = true,
                 modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
             )
-            cards.forEach { c ->
+            left.forEach { c ->
                 LightText(
                     text = c.displayName,
                     variant = LightTextVariant.Copy,
                     maxLines = 1,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .lightClickable { navigateTo({ EditScreen(it, null, c) }) }
+                        .lightClickable { navigateTo({ EditScreen(it, null, c) }) { id -> if (id.isNotEmpty()) viewModel.added(c) } }
                         .padding(vertical = 0.6f.gridUnitsAsDp()),
                 )
             }

@@ -1,6 +1,5 @@
 package com.jmsbrain.rolodex.ui
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -27,29 +26,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>() {
+class ImportViewModel(private val files: LightFileShare) : LightViewModel<String>() {
     val vcfFiles = MutableStateFlow<List<String>>(emptyList())
     val message = MutableStateFlow<String?>(null)
+    val importing = MutableStateFlow(false)
 
-    override fun onScreenShow(screen: SimpleLightScreen<Unit>) {
+    override fun onScreenShow(screen: SimpleLightScreen<String>) {
         vcfFiles.value = files.list(Folders.IMPORT)
             .filter { it.isFile && (it.name.endsWith(".vcf", true) || it.name.endsWith(".vcard", true)) }
             .map { it.name }
             .sorted()
     }
 
-    fun import(name: String) {
+    /** Imports one file, then [done] gets the result. One at a time, so a second tap can't import twice. */
+    fun import(name: String, done: (String) -> Unit) {
+        if (importing.value) return
+        importing.value = true
         viewModelScope.launch {
             // Null = missing or unreadable, not just empty.
             val cards = withContext(Dispatchers.IO) {
                 runCatching { files.read("${Folders.IMPORT}/$name") { VCard.parse(it.readText()) } }.getOrNull()
             }
             cards?.forEach { Contacts.source.save(it) }
-            message.value = when {
+            done(when {
                 cards == null -> "Couldn't open $name."
                 cards.isEmpty() -> "No contacts found in $name."
                 else -> "Imported ${cards.size} contact(s) from $name."
-            }
+            })
         }
     }
 
@@ -64,8 +67,8 @@ class ImportViewModel(private val files: LightFileShare) : LightViewModel<Unit>(
     }
 }
 
-/** Imports .vcf files uploaded through Tool Manager, and exports a backup. */
-class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, ImportViewModel>(sealedActivity) {
+/** Imports .vcf files uploaded through Tool Manager, and exports a backup. Returns the import result. */
+class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<String, ImportViewModel>(sealedActivity) {
 
     override val viewModelClass get() = ImportViewModel::class.java
     override fun createViewModel() = ImportViewModel(lightContext.fileShare)
@@ -74,8 +77,13 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, Impo
     override fun Content() {
         val vcfFiles by viewModel.vcfFiles.collectAsState()
         val message by viewModel.message.collectAsState()
+        val importing by viewModel.importing.collectAsState()
 
-        Box {
+        val shownMessage = message
+        // Instead of the page, not over it: the modal lets taps through.
+        if (shownMessage != null) {
+            LightFullscreenModal(message = shownMessage, onClose = { viewModel.message.value = null })
+        } else {
             RolodexPage(
                 title = "Import",
                 left = backButton { goBack() },
@@ -87,19 +95,19 @@ class ImportScreen(sealedActivity: SealedLightActivity) : LightScreen<Unit, Impo
                     lighten = true,
                     modifier = Modifier.padding(bottom = 1f.gridUnitsAsDp()),
                 )
-                if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
-                vcfFiles.forEach { name ->
+                if (importing) LightText("Importing…", LightTextVariant.Copy, lighten = true)
+                else if (vcfFiles.isEmpty()) LightText("No files uploaded yet.", LightTextVariant.Copy, lighten = true)
+                else vcfFiles.forEach { name ->
                     LightText(
                         text = name,
                         variant = LightTextVariant.Copy,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .lightClickable { viewModel.import(name) }
+                            .lightClickable { viewModel.import(name) { goBack(it) } }
                             .padding(vertical = 0.6f.gridUnitsAsDp()),
                     )
                 }
             }
-            message?.let { LightFullscreenModal(message = it, onClose = { viewModel.message.value = null }) }
         }
     }
 }

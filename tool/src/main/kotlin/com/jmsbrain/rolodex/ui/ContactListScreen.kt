@@ -105,8 +105,10 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f)) {
-                    TapField("SEARCH", query, "Tap to search") {
-                        navigateTo({ TextEditScreen(it, "Search", query) }) { viewModel.query.value = it }
+                    TextScale(LIST_TEXT_SCALE / TEXT_SCALE) {
+                        TapField("SEARCH", query, "Tap to search") {
+                            navigateTo({ TextEditScreen(it, "Search", query) }) { viewModel.query.value = it }
+                        }
                     }
                 }
                 if (query.isNotEmpty()) {
@@ -130,16 +132,20 @@ class ContactListScreen(sealedActivity: SealedLightActivity) :
                     lighten = true,
                 )
                 shown.isEmpty() -> LightText("No matches.", LightTextVariant.Copy, lighten = true)
-                else -> shown.forEach { contact ->
-                    LightText(
-                        text = contact.displayName,
-                        variant = LightTextVariant.Copy,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .lightClickable { navigateTo({ ContactScreen(it, contact.id) }) }
-                            .padding(vertical = 0.6f.gridUnitsAsDp()),
-                    )
+                else -> TextScale(LIST_TEXT_SCALE / TEXT_SCALE) {
+                    Column {
+                        shown.forEach { contact ->
+                            LightText(
+                                text = contact.displayName,
+                                variant = LightTextVariant.Copy,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .lightClickable { navigateTo({ ContactScreen(it, contact.id) }) }
+                                    .padding(vertical = 0.6f.gridUnitsAsDp()),
+                            )
+                        }
+                    }
                 }
             }
         }

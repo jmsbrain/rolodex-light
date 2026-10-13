@@ -63,7 +63,20 @@ fun RolodexTheme(content: @Composable () -> Unit) {
     }
 }
 
-/** A screen with a top bar, scrolling content and an optional bottom bar. */
+/** Page text size vs. Light's standard, as in Android Rolodex. */
+const val TEXT_SCALE = 1.2f
+
+/** Contact list names and search, as in Android Rolodex. */
+const val LIST_TEXT_SCALE = 1.3f
+
+/** Text in [content] at [scale] times its current size. */
+@Composable
+fun TextScale(scale: Float, content: @Composable () -> Unit) {
+    val current = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(current.density, current.fontScale * scale), content = content)
+}
+
+/** A screen with a top bar, scrolling content and an optional bottom bar. Page text is at [TEXT_SCALE]. */
 @Composable
 fun RolodexPage(
     title: String,
@@ -85,7 +98,7 @@ fun RolodexPage(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 1f.gridUnitsAsDp()),
-            ) { content() }
+            ) { TextScale(TEXT_SCALE) { content() } }
             if (bottom.isNotEmpty()) LightBottomBar(bottom)
         }
     }

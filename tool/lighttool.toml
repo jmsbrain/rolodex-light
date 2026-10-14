@@ -1,8 +1,8 @@
 [tool]
 id = "com.jmsbrain.rolodex"
 label = "Rolodex Light"
-versionCode = 8
-versionName = "0.2.3"
+versionCode = 9
+versionName = "1.0.0"
 # INTERNET: CardDAV sync, only with the server the user signs in to.
 # Contacts live inside the tool for now. Once LightOS allows it, add
 # "android.permission.READ_CONTACTS" and "android.permission.WRITE_CONTACTS"

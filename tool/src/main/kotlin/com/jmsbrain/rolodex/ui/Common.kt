@@ -69,6 +69,9 @@ const val TEXT_SCALE = 1.2f
 /** Contact list names and search, as in Android Rolodex. */
 const val LIST_TEXT_SCALE = 1.3f
 
+/** Bottom bar words: capitals as tall as the search box's small letters, as in Android Rolodex. */
+const val BUTTON_TEXT_SCALE = 0.8f
+
 /** Text in [content] at [scale] times its current size. */
 @Composable
 fun TextScale(scale: Float, content: @Composable () -> Unit) {
@@ -99,7 +102,7 @@ fun RolodexPage(
                     .fillMaxWidth()
                     .padding(horizontal = 1f.gridUnitsAsDp()),
             ) { TextScale(TEXT_SCALE) { content() } }
-            if (bottom.isNotEmpty()) LightBottomBar(bottom)
+            if (bottom.isNotEmpty()) TextScale(BUTTON_TEXT_SCALE) { LightBottomBar(bottom) }
         }
     }
 }
